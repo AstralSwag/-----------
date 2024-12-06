@@ -1,13 +1,23 @@
-import os
 import csv
 import logging
+import pandas as pd
+import os
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CallbackContext, CommandHandler, CallbackQueryHandler
 from datetime import datetime, time
 from dotenv import load_dotenv
+import requests
+import tempfile
+import locale
+
+# Устанавливаем русскую локаль (для Linux/Unix/Mac)
+locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
 load_dotenv()
 
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 CSV_FILE_PATH = os.getenv('CSV_FILE_PATH', 'schedule.csv')
+
 
 # Настройка логирования
 logging.basicConfig(
@@ -17,6 +27,25 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 EMPLOYEES = ["Александр Д.", "Софья", "Игорь", "Дмитрий В.", "Дмитрий С.", "Надежда", "Никита", "Екатерина", "Алексей"]
+
+
+def download_csv(url):
+    """Скачивает CSV файл по URL и сохраняет его в временный файл."""
+    response = requests.get(url)
+    if response.status_code == 200:
+
+        
+
+        temp_file = tempfile.NamedTemporaryFile(delete=False, mode='w', newline='', encoding='utf-8')
+
+        temp_file.write(response.content.decode('utf-8'))
+        temp_file.close()
+        return temp_file.name
+    else:
+        logger.error(f"Не удалось скачать CSV файл: {response.status_code}")
+        return None
+if CSV_FILE_PATH.startswith('http'):
+    CSV_FILE_PATH = download_csv(CSV_FILE_PATH)
 
 def parse_csv(csv_path):
     """
