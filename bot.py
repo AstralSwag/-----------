@@ -3,7 +3,7 @@ import logging
 import pandas as pd
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CallbackContext, CommandHandler, CallbackQueryHandler
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from datetime import datetime, time
 from dotenv import load_dotenv
 import requests
@@ -230,12 +230,56 @@ def get_current_duty(schedule):
     return None
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
+#     schedule_data = parse_csv(CSV_FILE_PATH)
+#     # Пример использования:
+#     # Определим, кто дежурит сейчас
+#     now_duty = get_current_duty(schedule_data)
+#     if now_duty:
+#         print("Сейчас дежурят:", ", ".join(now_duty))
+#     else:
+#         print("Сейчас нет дежурных или расписание не найдено.")
+
+
+#БОТ
+
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        [InlineKeyboardButton("Кто сейчас дежурит?", callback_data='current_duty')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text('Выберите действие:', reply_markup=reply_markup)
+
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
     schedule_data = parse_csv(CSV_FILE_PATH)
-    # Пример использования:
-    # Определим, кто дежурит сейчас
-    now_duty = get_current_duty(schedule_data)
-    if now_duty:
-        print("Сейчас дежурят:", ", ".join(now_duty))
-    else:
-        print("Сейчас нет дежурных или расписание не найдено.")
+
+    if query.data == 'current_duty':
+        if schedule_data:
+            duty_person = get_current_duty(schedule_data)
+            if duty_person:
+                response_text = f"Сейчас дежурит: {duty_person}"
+            else:
+                response_text = "Сейчас нет дежурных."
+        else:
+            response_text = "Не удалось получить данные о дежурных."
+
+        await query.edit_message_text(text=response_text)
+
+def main():
+    # Создание экземпляра приложения
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+
+    # Обработчики команд
+    application.add_handler(CommandHandler('start', start))
+    application.add_handler(CallbackQueryHandler(button))
+
+    # Запуск бота
+    application.run_polling()
+
+if __name__ == '__main__':
+    main()
