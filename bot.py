@@ -8,12 +8,8 @@ from datetime import datetime, time
 from dotenv import load_dotenv
 import requests
 import tempfile
-import locale
 
-# Устанавливаем русскую локаль (для Linux/Unix/Mac)
-locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
-load_dotenv()
 
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 CSV_FILE_PATH = os.getenv('CSV_FILE_PATH', 'schedule.csv')
@@ -47,25 +43,37 @@ def download_csv(url):
 if CSV_FILE_PATH.startswith('http'):
     CSV_FILE_PATH = download_csv(CSV_FILE_PATH)
 
-def parse_csv(csv_path):
-    """
-    Парсит CSV согласно описанной структуре и возвращает данные в формате:
-    {
-      date: {
-        'intervals': [
-           {
-             'start': time,
-             'end': time,
-             'duties': { 'Александр Д.': True/False, ... },
-             'day_states': { 'Александр Д.': 'р'/'о'/'в' or None }
-           },
-           ...
-        ]
-      },
-      ...
-    }
-    """
+    # Создадим словарь для замены русских месяцев на английские
+month_translation = {
+    'янв': 'Jan', 'фев': 'Feb', 'мар': 'Mar', 'апр': 'Apr', 'май': 'May', 'июн': 'Jun',
+    'июл': 'Jul', 'авг': 'Aug', 'сен': 'Sep', 'окт': 'Oct', 'ноя': 'Nov', 'дек': 'Dec'
+}
 
+def parse_russian_date(date_str):
+    """
+    Парсит строку с русским месяцем в формате 'день месяц' (например '1 дек')
+    и возвращает объект datetime.
+    """
+    # Убираем день недели (если есть) и убираем точку из месяца
+    date_str = date_str.split(',')[1].strip().replace('.', '')
+    
+    # Заменяем русский месяц на английский
+    for ru_month, en_month in month_translation.items():
+        if ru_month in date_str:
+            date_str = date_str.replace(ru_month, en_month)
+            break
+
+    try:
+        # Теперь парсим с английским месяцем
+        date_obj = datetime.strptime(date_str, '%d %b')
+        # Подставляем текущий год
+        date_obj = date_obj.replace(year=datetime.now().year)
+        return date_obj
+    except Exception as e:
+        print(f"Ошибка при разборе даты: {date_str} - {e}")
+        return None
+
+def parse_csv(csv_path):
     schedule = {}
     with open(csv_path, 'r', encoding='utf-8') as f:
         reader = csv.reader(f)
@@ -79,28 +87,19 @@ def parse_csv(csv_path):
             interval_col = row[1].strip() if len(row) > 1 else ""
 
             # Проверка: начало нового дня.
-            # Признак нового дня: в первой колонке есть дата с днём недели, например "пн, 2 дек."
-            # Допустим, что формат всегда такой: "<день_нед>, <число> дек." 
-            # или что первая колонка не пустая, значит начинается новый день
             if first_col:
                 # Если уже были накоплены данные по предыдущему дню, обрабатываем их
                 if current_date and day_records:
                     process_day_records(schedule, current_date, day_records)
                     day_records.clear()
 
-                # Парсим дату из first_col (например: "пн, 2 дек.")
-                # Формат: "<день_нед>, <число> дек."
-                # Из строки вырезаем число и месяц
                 try:
-                    # Пример: "вс, 1 дек." -> split(',') -> ["вс", " 1 дек."]
-                    # Берём вторую часть, убираем пробелы
-                    date_str = first_col.split(',')[1].strip().replace('.', '')
-                    # date_str теперь типа "1 дек"
-                    # Парсим дату без года:
-                    date_obj = datetime.strptime(date_str, '%d %b')
-                    # Подставляем текущий год
-                    date_obj = date_obj.replace(year=datetime.now().year)
-                    current_date = date_obj.date()
+                    # Парсим дату с использованием новой функции
+                    date_obj = parse_russian_date(first_col)
+                    if date_obj:
+                        current_date = date_obj.date()
+                    else:
+                        current_date = None
                 except Exception as e:
                     logger.error(f"Ошибка при разборе даты: {first_col} - {e}")
                     current_date = None
@@ -114,6 +113,7 @@ def parse_csv(csv_path):
             process_day_records(schedule, current_date, day_records)
 
     return schedule
+
 
 
 def process_day_records(schedule, current_date, day_records):
