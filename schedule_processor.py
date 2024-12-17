@@ -43,7 +43,7 @@ def download_and_process_schedule(csv_url, output_json_path):
         for row in reader:
             # Если первая ячейка не пустая, то это новая дата
             if row[0]:
-                current_date = row[0].strip()  # Дата
+                current_date = get_date(row[0].strip())  # Дата
 
             # Второй столбец - это интервал времени
             interval = row[1].strip()
@@ -75,3 +75,28 @@ def download_and_process_schedule(csv_url, output_json_path):
         json.dump(schedule, json_file, ensure_ascii=False, indent=4)
 
     print(f"Данные успешно сохранены в '{output_json_path}'.")
+
+def get_date(rus_date):
+
+    parts = rus_date.split(', ')
+    day = parts[1].split(' ')[0]
+    month_cyr = parts[1].split(' ')[1]
+
+    month_mapping = {
+        'янв': '01',
+        'фев': '02',
+        'мар': '03',
+        'апр': '04',
+        'май': '05',
+        'июн': '06',
+        'июл': '07',
+        'авг': '08',
+        'сен': '09',
+        'окт': '10',
+        'ноя': '11',
+        'дек': '12'
+    }
+    month = month_mapping.get(month_cyr, '01')
+
+    year = '2024'
+    return f"{year}-{month}-{day.zfill(2)}"
