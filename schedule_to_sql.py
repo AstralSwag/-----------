@@ -83,16 +83,9 @@ def download_and_process_schedule(csv_url):
 
 
 def get_date(rus_date):
-    # Проверка, если строка пустая или None
-    if not isinstance(rus_date, str) or not rus_date.strip():
-        return None
-    
     parts = rus_date.split(', ')
-    if len(parts) < 2:
-        return None  # Некорректный формат строки
-    
     day = parts[1].split(' ')[0]
-    month_cyr = parts[1].split(' ')[1]
+    month_cyr = parts[1].split(' ')[1][:3]  # Учитываем только первые 3 символа
 
     month_mapping = {
         'янв': '01',
@@ -108,7 +101,11 @@ def get_date(rus_date):
         'ноя': '11',
         'дек': '12'
     }
-    
-    month = month_mapping.get(month_cyr, '01')
-    year = str(datetime.now().year)  # Получаем текущий год
+    month = month_mapping.get(month_cyr)
+    if not month:
+        raise ValueError(f"Unknown month abbreviation: {month_cyr}")
+
+
+    year = '2024'
     return f"{day.zfill(2)}.{month}.{year}"
+
