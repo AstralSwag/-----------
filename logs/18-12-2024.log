@@ -166,3 +166,11 @@
 2024-12-18 22:27:30 - User: Александр (@astralswag) - Error: A request to the Telegram API was unsuccessful. Error code: 400. Description: Bad Request: message text is empty
 2024-12-18 22:28:01 - Infinity polling: polling exited
 2024-12-18 22:28:01 - Break infinity polling
+2024-12-18 22:28:06 - Бот запущен...
+2024-12-18 22:28:34 - User: Александр (@astralswag) sent /start
+2024-12-18 22:28:36 - User: Александр (@astralswag) requested 'Моё расписание'
+2024-12-18 22:28:39 - User: Александр (@astralswag) - Schedule sent for @astralswag
+2024-12-18 22:28:42 - User: Александр (@astralswag) requested 'Моё расписание'
+2024-12-18 22:28:43 - User: Александр (@astralswag) - Schedule sent for @astralswag
+2024-12-18 22:38:33 - Infinity polling: polling exited
+2024-12-18 22:38:33 - Break infinity polling
