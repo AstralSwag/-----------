@@ -26,7 +26,7 @@ def download_and_process_schedule(csv_url):
     df = pd.read_csv(file_path)
 
     # Обрезаем колонки после последней, которая не является пустой
-    columns_to_keep = df.columns[:df.columns.get_loc("") + 1]
+    columns_to_keep = [col for col in df.columns if 'Unnamed' not in col]
     df_filtered = df[columns_to_keep]
 
     # Находим последнюю дату и удаляем строки после неё
@@ -34,8 +34,13 @@ def download_and_process_schedule(csv_url):
     last_date_index = date_rows.last_valid_index()
     df_filtered = df_filtered.loc[:last_date_index]
 
+    # Заполняем пропуски в столбце 'Дата' значениями из предыдущей строки
+    df_filtered['Дата'] = df_filtered['Дата'].ffill()
+
     # Переводим имена сотрудников и статусы
-    name_mapping = {
+    head_mapping = {
+        'Дата': 'Date',
+        'Интервал': 'Time',
         'Александр Д.': '@astralswag',
         'Софья': '@ssofpa',
         'Игорь': '@alwasready',
@@ -55,12 +60,11 @@ def download_and_process_schedule(csv_url):
     }
 
     # Переименовываем столбцы на английский
-    df_filtered.rename(columns={'Дата': 'Date', 'Unnamed: 0': 'Time'}, inplace=True)
+    df_filtered.rename(columns=head_mapping, inplace=True)
 
-    # Применяем преобразования
+    # Применяем замену статусов
     for col in df_filtered.columns[2:]:  # Начинаем с третьей колонки, где начинаются имена сотрудников
-        df_filtered[col] = df_filtered[col].map(lambda x: status_mapping.get(x, x))  # Заменяем статусы
-        df_filtered[col] = df_filtered[col].replace(name_mapping)  # Заменяем имена
+        df_filtered[col] = df_filtered[col].replace(status_mapping)  # Заменяем статусы с помощью replace
 
     # Создаём базу данных SQLite и записываем таблицу
     db_name = './schedule.db'
