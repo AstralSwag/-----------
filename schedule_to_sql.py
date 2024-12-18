@@ -1,6 +1,8 @@
 import pandas as pd
 import sqlite3
 import requests
+from datetime import datetime
+
 
 def download_and_process_schedule(csv_url):
 
@@ -27,7 +29,7 @@ def download_and_process_schedule(csv_url):
 
     # Обрезаем колонки после последней, которая не является пустой
     columns_to_keep = [col for col in df.columns if 'Unnamed' not in col]
-    df_filtered = df[columns_to_keep]
+    df_filtered = df[columns_to_keep].copy()  # Создаём копию данных
 
     # Находим последнюю дату и удаляем строки после неё
     date_rows = df_filtered['Дата'].dropna()
@@ -36,6 +38,9 @@ def download_and_process_schedule(csv_url):
 
     # Заполняем пропуски в столбце 'Дата' значениями из предыдущей строки
     df_filtered['Дата'] = df_filtered['Дата'].ffill()
+
+    # Преобразуем даты в формат YYYY-MM-DD
+    df_filtered['Дата'] = df_filtered['Дата'].apply(get_date)
 
     # Переводим имена сотрудников и статусы
     head_mapping = {
@@ -75,3 +80,35 @@ def download_and_process_schedule(csv_url):
     conn.close()
 
     print("Данные успешно сохранены в базе данных.")
+
+
+def get_date(rus_date):
+    # Проверка, если строка пустая или None
+    if not isinstance(rus_date, str) or not rus_date.strip():
+        return None
+    
+    parts = rus_date.split(', ')
+    if len(parts) < 2:
+        return None  # Некорректный формат строки
+    
+    day = parts[1].split(' ')[0]
+    month_cyr = parts[1].split(' ')[1]
+
+    month_mapping = {
+        'янв': '01',
+        'фев': '02',
+        'мар': '03',
+        'апр': '04',
+        'май': '05',
+        'июн': '06',
+        'июл': '07',
+        'авг': '08',
+        'сен': '09',
+        'окт': '10',
+        'ноя': '11',
+        'дек': '12'
+    }
+    
+    month = month_mapping.get(month_cyr, '01')
+    year = str(datetime.now().year)  # Получаем текущий год
+    return f"{day.zfill(2)}.{month}.{year}"
