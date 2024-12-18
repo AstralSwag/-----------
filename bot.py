@@ -66,7 +66,7 @@ def send_welcome(message):
     button_duty = telebot.types.KeyboardButton("Кто дежурит?")
     button_schedule = telebot.types.KeyboardButton("Моё расписание")
     markup.add(button_duty, button_schedule)
-    bot.send_message(message.chat.id, "Привет! Выберите действие на клавиатуре ниже:", reply_markup=markup)
+    bot.send_message(message.chat.id, "Привет! Теперь я Матроскин_V2 и умею выводить твоё расписание!!!:", reply_markup=markup)
 
 
 
@@ -246,6 +246,22 @@ def handle_schedule_days_input(message):
         if 'conn' in locals():
             conn.close()
         user_context.pop(message.chat.id, None)
+
+
+# Функция для проверки, входит ли текущее время в заданный диапазон
+def is_time_in_range(time_range, current_time):
+    try:
+        start_time, end_time = time_range.split('-')
+        start_time = datetime.strptime(start_time.strip(), '%H:%M').time()
+        end_time = datetime.strptime(end_time.strip(), '%H:%M').time()
+
+        if start_time <= end_time:
+            return start_time <= current_time <= end_time
+        else:  # Случай, если смена ночная
+            return current_time >= start_time or current_time <= end_time
+    except ValueError:
+        return False
+    
 
 # Запуск бота
 logging.info("Бот запущен...")
