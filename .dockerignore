@@ -1,0 +1,6 @@
+.env
+.gitignore
+schedule_processor.py
+schedule.csv
+schedule.db
+schedule.json
